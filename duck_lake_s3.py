@@ -115,28 +115,47 @@ def delete_rows_and_rollback(con):
         """)
     result.show()
 
-# def create_table(con):
-#     con.sql("""CREATE TABLE IF NOT EXISTS metadata.customers (
-#         customer_id INTEGER,
-#         first_name STRING,
-#         last_name STRING,
-#         email STRING,
-#         city STRING,
-#         created_at TIMESTAMP
-#     );""")
+def create_table_customers(con):
+    print("Create table mock_data.customers \n")
+    con.sql("""
+    CREATE SCHEMA IF NOT EXISTS mock_data;
+    """) 
+    con.sql(f"""CREATE OR REPLACE TABLE {duck_lake_name}.mock_data.customers (
+        customer_id INTEGER,
+        first_name STRING,
+        last_name STRING,
+        email STRING,
+        city STRING,
+        created_at TIMESTAMP
+    );""")
 
-#     con.sql("""
-#         INSERT INTO metadata.customers VALUES
-#         (1, 'Alice', 'Smith', 'alice@example.com', 'New York', CURRENT_TIMESTAMP),
-#         (2, 'Bob', 'Johnson', 'bob@example.com', 'San Francisco', CURRENT_TIMESTAMP);
-#             """)
+    con.sql(f"""
+        INSERT INTO {duck_lake_name}.mock_data.customers VALUES
+        (1, 'Alice', 'Smith', 'alice@example.com', 'New York', CURRENT_TIMESTAMP),
+        (2, 'Bob', 'Johnson', 'bob@example.com', 'San Francisco', CURRENT_TIMESTAMP);
+        """)
+    
+    print(f'Select data after upsert:\n SELECT * FROM {duck_lake_name}.mock_data.customers; \n')
+    result = con.sql(f"""
+    SELECT * FROM {duck_lake_name}.mock_data.customers;
+    """)
+    result.show() 
 
-
-# def delete_data(con):
-#     print('Delete data')
-#     con.sql("""
-#     DELETE FROM customer WHERE customer_id = 1;
-#     """)
+def upsert_customers_table(con):
+    print("Upsert table mock_data.customers \n")
+    con.sql(f"""DELETE FROM {duck_lake_name}.mock_data.customers 
+                where customer_id in (2);""")
+    con.sql(f"""
+    INSERT INTO {duck_lake_name}.mock_data.customers VALUES
+        (2, 'Bob', 'Johnson', 'bob@example.com', 'San Francisco', CURRENT_TIMESTAMP),
+        (3, 'SpongeBob', 'SquarePants', 'sponge_bob@example.com', 'Recife', CURRENT_TIMESTAMP),
+        (4, 'Patrick', 'Star', 'patrick_star@example.com', 'Recife', CURRENT_TIMESTAMP);
+    """)
+    print(f'Select data after upsert:\n SELECT * FROM {duck_lake_name}.smock_data.customers; \n')
+    result = con.sql(f"""
+    SELECT * FROM {duck_lake_name}.mock_data.customers;
+    """)
+    result.show() 
 
 
 
@@ -158,4 +177,7 @@ check_snapshots(con)
 query_data_snapshot(con)
 print('### Test rollback \n')
 delete_rows_and_rollback(con)
+print('### Testing upsert/merge\n')
+create_table_customers(con)
+upsert_customers_table(con)
 con.close()
