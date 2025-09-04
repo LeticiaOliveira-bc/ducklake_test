@@ -36,8 +36,8 @@ def setup_s3_connection(con):
         );""")
 
 ## Read s3 data
-def query_s3_data(con):
-    print('Query data from S3')
+def create_table_from_s3(con):
+    print(f'Create table {duck_lake_name}.scraper_staging.{table_name} from S3 data\n')
     start_time = time.time() 
 
     con.sql(f"""
@@ -46,9 +46,10 @@ def query_s3_data(con):
     """) 
     end_time = time.time()   
     execution_time = (end_time - start_time)/60
-    print(f"Execution time: {execution_time} minutes")
+    print(f"Execution time: {execution_time} minute \n")
 
 def create_s3_duck_lake(con):
+    print(f'Create/ATTACH ducklake {duck_lake_name}.\n')
     con.execute(f"""
     ATTACH 'ducklake:{duck_lake_name}/metadata.ducklake' AS {duck_lake_name}  (
     DATA_PATH '{DUCKLAKE_PARQUET_FILES_PATH}'
@@ -74,6 +75,13 @@ def check_snapshots(con):
         """)
     result.show()
 
+def query_data_snapshot(con):
+    print('query snapshot data')
+    result = con.sql(f"""
+    SELECT * FROM {duck_lake_name}.scraper_staging.{table_name} AT (VERSION => 2) limit 5;
+    """)
+    result.show()
+
 def check_rows_count(con):
     result = con.sql(f"""
     SELECT count(*) FROM {duck_lake_name}.scraper_staging.{table_name};
@@ -85,7 +93,7 @@ def append_data(con):
     con.execute(f"COPY {duck_lake_name}.scraper_staging.{table_name} FROM '{S3_CSV_PATH}'")
 
 def delete_rows_and_rollback(con):
-    print("Delete table \n")
+    print("Start transaction - Delete table \n")
     result = con.sql(f"""
         BEGIN TRANSACTION;
         DELETE FROM {duck_lake_name}.scraper_staging.{table_name};
@@ -98,6 +106,14 @@ def delete_rows_and_rollback(con):
         select count(8) FROM {duck_lake_name}.scraper_staging.{table_name};""")
     result.show()
 
+    print("Start transaction - Delete part of the table and commit \n")
+    result = con.sql(f"""
+        BEGIN TRANSACTION;
+        DELETE FROM {duck_lake_name}.scraper_staging.{table_name} WHERE column11 is not null;
+        COMMIT;
+        select count (*) FROM {duck_lake_name}.scraper_staging.{table_name};
+        """)
+    result.show()
 
 # def create_table(con):
 #     con.sql("""CREATE TABLE IF NOT EXISTS metadata.customers (
@@ -122,23 +138,24 @@ def delete_rows_and_rollback(con):
 #     DELETE FROM customer WHERE customer_id = 1;
 #     """)
 
-# def query_data_snapshot(con):
-#     print('Select data before delete')
-#     result = con.sql(f"""
-#     SELECT * FROM customer AT (VERSION => 3);
-#     """)
-#     result.show()
+
 
 load_dotenv()
 con = duckdb.connect(read_only = False)
+print('### Setup ducklake\n')
 setup_s3_connection(con)
 create_s3_duck_lake(con)
 define_schema(con)
-query_s3_data(con)
+print('### Creating table from S3 \n')
+create_table_from_s3(con)
 query_data(con)
+print('### Test append data on the table\n')
 check_rows_count(con)
 append_data(con)
 check_rows_count(con)
+print('### Check snapshots \n')
 check_snapshots(con)
+query_data_snapshot(con)
+print('### Test rollback \n')
 delete_rows_and_rollback(con)
 con.close()

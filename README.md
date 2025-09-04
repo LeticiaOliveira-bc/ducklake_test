@@ -19,6 +19,8 @@ run notebooks :
 
 To run tables in s3:
 
+If needed to reset the ducklake snapshot history, delete the `ducklake_s3/metadata.ducklake`.
+
     python3 duck_lake_s3.py
 
 To teste creating local files(data_files path):
