@@ -85,11 +85,20 @@ def append_data(con):
     con.execute(f"COPY {duck_lake_name}.scraper_staging.{table_name} FROM '{S3_CSV_PATH}'")
 
 def delete_rows_and_rollback(con):
-    print(f"SELECT * FROM ducklake_snapshots('{duck_lake_name} \n")
+    print("Delete table \n")
     result = con.sql(f"""
-        SELECT * FROM ducklake_snapshots('{duck_lake_name}');
-        """)
+        BEGIN TRANSACTION;
+        DELETE FROM {duck_lake_name}.scraper_staging.{table_name};
+        select count (*) FROM {duck_lake_name}.scraper_staging.{table_name};""")
     result.show()
+
+    print("Rollback table before commit \n")
+    result = con.sql(f"""
+        ROLLBACK;
+        select count(8) FROM {duck_lake_name}.scraper_staging.{table_name};""")
+    result.show()
+
+
 # def create_table(con):
 #     con.sql("""CREATE TABLE IF NOT EXISTS metadata.customers (
 #         customer_id INTEGER,
@@ -127,8 +136,9 @@ create_s3_duck_lake(con)
 define_schema(con)
 query_s3_data(con)
 query_data(con)
-check_rows_count(con)
-append_data(con)
-check_rows_count(con)
-check_snapshots(con)
+# check_rows_count(con)
+# append_data(con)
+# check_rows_count(con)
+# check_snapshots(con)
+delete_rows_and_rollback(con)
 con.close()
