@@ -62,11 +62,17 @@ def define_schema(con):
     """) 
 
 def query_data(con):
-    print('Select data')
+    print(f'Select data :\n SELECT * FROM {duck_lake_name}.scraper_staging.{table_name}; \n')
     result = con.sql(f"""
-    SELECT * FROM {duck_lake_name}.scraper_staging.{table_name};
+    SELECT * FROM {duck_lake_name}.scraper_staging.{table_name} limit 5;
     """)
     result.show() 
+
+def check_snapshots(con):
+    result = con.sql(f"""
+        SELECT * FROM ducklake_snapshots('{duck_lake_name}');
+        """)
+    result.show()
 
 # def create_table(con):
 #     con.sql("""CREATE TABLE IF NOT EXISTS metadata.customers (
@@ -105,5 +111,6 @@ create_s3_duck_lake(con)
 define_schema(con)
 query_s3_data(con)
 query_data(con)
+check_snapshots(con)
 
 con.close()
