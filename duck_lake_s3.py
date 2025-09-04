@@ -40,21 +40,21 @@ def query_s3_data(con):
     print('Query data from S3')
     start_time = time.time() 
 
-    result = con.sql(f"""
-        CREATE TABLE {duck_lake_name}.scraper_staging.{table_name} AS
+    con.sql(f"""
+        CREATE TABLE scraper_staging.{table_name} AS
         SELECT * FROM read_csv_auto('{S3_CSV_PATH}');
     """) 
-    result.show()
     end_time = time.time()   
     execution_time = (end_time - start_time)/60
     print(f"Execution time: {execution_time} minutes")
 
 def create_s3_duck_lake(con):
-    con.execute = f"""
+    con.execute(f"""
     ATTACH 'ducklake:{duck_lake_name}/metadata.ducklake' AS {duck_lake_name}  (
     DATA_PATH '{DUCKLAKE_PARQUET_FILES_PATH}'
     );
-    """
+    USE {duck_lake_name};
+    """)
 
 def define_schema(con):
     con.sql("""
