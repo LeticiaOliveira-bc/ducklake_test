@@ -7,7 +7,7 @@ def setup_ducklake(con):
                     LOAD ducklake;""")
     
     ## Create the metabase using duckdb as database
-    con.execute("""ATTACH 'ducklake:ducklake_metadata/metadata.ducklake' AS my_ducklake 
+    con.execute("""ATTACH 'ducklake:ducklake_local_data/metadata.ducklake' AS my_ducklake 
                     (DATA_PATH 'data_files');
                     USE my_ducklake;""")
 
