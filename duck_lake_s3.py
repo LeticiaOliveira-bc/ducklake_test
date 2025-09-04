@@ -41,7 +41,7 @@ def query_s3_data(con):
     start_time = time.time() 
 
     con.sql(f"""
-        CREATE TABLE scraper_staging.{table_name} AS
+        CREATE OR REPLACE TABLE scraper_staging.{table_name} AS
         SELECT * FROM read_csv_auto('{S3_CSV_PATH}');
     """) 
     end_time = time.time()   
@@ -74,6 +74,22 @@ def check_snapshots(con):
         """)
     result.show()
 
+def check_rows_count(con):
+    result = con.sql(f"""
+    SELECT count(*) FROM {duck_lake_name}.scraper_staging.{table_name};
+    """).fetchone()
+    print(f"Number of rows: {result[0]} \n")
+
+def append_data(con):
+    print(f"append data \n COPY {duck_lake_name}.scraper_staging.{table_name} FROM '{S3_CSV_PATH}' \n")
+    con.execute(f"COPY {duck_lake_name}.scraper_staging.{table_name} FROM '{S3_CSV_PATH}'")
+
+def delete_rows_and_rollback(con):
+    print(f"SELECT * FROM ducklake_snapshots('{duck_lake_name} \n")
+    result = con.sql(f"""
+        SELECT * FROM ducklake_snapshots('{duck_lake_name}');
+        """)
+    result.show()
 # def create_table(con):
 #     con.sql("""CREATE TABLE IF NOT EXISTS metadata.customers (
 #         customer_id INTEGER,
@@ -111,6 +127,8 @@ create_s3_duck_lake(con)
 define_schema(con)
 query_s3_data(con)
 query_data(con)
+check_rows_count(con)
+append_data(con)
+check_rows_count(con)
 check_snapshots(con)
-
 con.close()
