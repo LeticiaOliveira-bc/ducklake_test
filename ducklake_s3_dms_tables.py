@@ -28,14 +28,14 @@ def extract_unique_folders():
 
     for page in page_iterator:
         for content in page.get('CommonPrefixes', []):
-            folder_path = content.get('Prefix')  # e.g. 'staging/dms_test/scraper_staging/some_folder/'
+            folder_path = content.get('Prefix') 
             if folder_path:
                 folder_name = folder_path.strip('/').split('/')[-1]
                 folder_names.add(folder_name)
 
     return folder_names
 
-# Setup DuckDB and S3 connection
+
 def setup_s3_connection(con):
     print('Setup S3 connection.')
     con.execute("""
@@ -59,12 +59,12 @@ def setup_s3_connection(con):
         );
     """)
 
-# Create tables in DuckDB based on folder names
+
 def create_tables_from_folders(con, folders):
     for folder_name in folders:
         print(f'Creating table scraper_staging.{folder_name} from folder: {folder_name}\n')
 
-        # Assuming CSV files are directly inside the folder
+       
         csv_path = f"s3://{S3_BUCKET}/{ROOT_S3_PREFIX}{folder_name}/*.csv"
         start_time = time.time()
 
